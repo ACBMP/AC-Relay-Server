@@ -81,6 +81,20 @@ Logs go to stdout: allocations created, refreshed, released and expired
 (allocations, packets/bytes in and out, drops). SIGINT/SIGTERM shuts down
 cleanly and prints final stats.
 
+### Docker Compose
+
+```sh
+cp .env.example .env      # set AC_RELAY_PUBLIC_IP; optionally AC_RELAY_PASSWORD
+docker compose up -d --build
+docker compose logs -f
+```
+
+`docker-compose.yml` runs the relay with host networking, a read-only
+filesystem and no capabilities. Every setting comes from `.env` (see
+`.env.example`): public IP (required), password, control port, port range,
+bind address, lease, per-IP cap. Open the control port and the port range
+(UDP) in the host firewall.
+
 ### Docker
 
 ```sh

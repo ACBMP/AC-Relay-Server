@@ -1,0 +1,31 @@
+# AC Relay server.
+#
+#   cp .env.example .env     # set AC_RELAY_PUBLIC_IP at least
+#   docker compose up -d --build
+#   docker compose logs -f
+#
+# Host networking: the relay must see players' real source addresses, and
+# publishing the 800-port allocation range through Docker's NAT is slow.
+# Open AC_RELAY_CONTROL_PORT and AC_RELAY_PORT_RANGE (UDP) in the host firewall.
+services:
+  ac-relay:
+    build: .
+    image: ac-relay:latest
+    container_name: ac-relay
+    restart: unless-stopped
+    network_mode: host
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    stop_signal: SIGTERM
+    command:
+      - --public-ip=${AC_RELAY_PUBLIC_IP:?set AC_RELAY_PUBLIC_IP in .env}
+      - --bind=${AC_RELAY_BIND:-0.0.0.0}
+      - --control-port=${AC_RELAY_CONTROL_PORT:-21100}
+      - --port-range=${AC_RELAY_PORT_RANGE:-40200-40999}
+      - --password=${AC_RELAY_PASSWORD:-}
+      - --lease=${AC_RELAY_LEASE:-60}
+      - --max-per-ip=${AC_RELAY_MAX_PER_IP:-4}
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
