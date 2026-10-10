@@ -17,7 +17,8 @@ using sock_t = int;
 
 struct Config {
     std::string bind = "0.0.0.0";
-    uint32_t public_ip = 0;  // host byte order
+    std::string public_host;  // --public-ip as given: IPv4 literal or hostname
+    uint32_t public_ip = 0;   // host byte order; resolved from public_host in start()
     uint16_t control_port = 21100;
     uint16_t port_lo = 40200;
     uint16_t port_hi = 40999;
@@ -32,6 +33,8 @@ struct Config {
 
 // Parses dotted-quad IPv4 into host byte order.
 bool parse_ipv4(const std::string& s, uint32_t& out);
+// IPv4 literal, or a hostname resolved to its first IPv4 address.
+bool resolve_ipv4(const std::string& host, uint32_t& out);
 
 class Relay {
 public:

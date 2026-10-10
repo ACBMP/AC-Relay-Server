@@ -33,6 +33,7 @@ bool set_nonblocking(acr::sock_t s) {
 }  // namespace
 #else
 #include <arpa/inet.h>
+#include <netdb.h>
 #include <cerrno>
 #include <fcntl.h>
 #include <netinet/in.h>
@@ -130,6 +131,18 @@ bool parse_ipv4(const std::string& s, uint32_t& out) {
     return true;
 }
 
+bool resolve_ipv4(const std::string& host, uint32_t& out) {
+    if (parse_ipv4(host, out)) return true;
+    addrinfo hints{};
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_DGRAM;
+    addrinfo* res = nullptr;
+    if (getaddrinfo(host.c_str(), nullptr, &hints, &res) != 0 || !res) return false;
+    out = ntohl(reinterpret_cast<sockaddr_in*>(res->ai_addr)->sin_addr.s_addr);
+    freeaddrinfo(res);
+    return true;
+}
+
 Relay::Relay(Config cfg) : cfg_(std::move(cfg)), ctrl_(kInvalid) {
     for (uint32_t p = cfg_.port_lo; p <= cfg_.port_hi; ++p) free_ports_.push_back(uint16_t(p));
     if (cfg_.max_allocations == 0 || cfg_.max_allocations > free_ports_.size())
@@ -150,6 +163,13 @@ bool Relay::start() {
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) return false;
 #endif
     net_init_ = true;
+    if (!resolve_ipv4(cfg_.public_host, cfg_.public_ip) || cfg_.public_ip == 0) {
+        logf("error: cannot resolve public address '%s' to an IPv4", cfg_.public_host.c_str());
+        return false;
+    }
+    if (!parse_ipv4(cfg_.public_host, cfg_.public_ip))
+        logf("public address %s resolved to %s (re-resolved only on restart)",
+             cfg_.public_host.c_str(), fmt_ip(cfg_.public_ip).c_str());
     if (!parse_ipv4(cfg_.bind, bind_ip_)) {
         logf("error: bad bind address '%s'", cfg_.bind.c_str());
         return false;

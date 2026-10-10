@@ -217,12 +217,29 @@ def test_rate_limit(binary):
         r.stop()
 
 
+def test_public_hostname(binary):
+    # a later --public-ip overrides the IPv4 literal the Relay helper passes
+    r = Relay(binary, 2, "--public-ip", "localhost")
+    try:
+        expect(r.rpc(udp(), allocate(9)), ALLOCATED, nonce=9, relay_ip=0x7F000001)
+        print("ok public hostname resolved")
+    finally:
+        out = r.stop()
+    assert "public address localhost resolved to 127.0.0.1" in out, out
+    bad = subprocess.run([binary, "--bind", LOCAL, "--public-ip", "no-such-host.invalid",
+                          "--control-port", str(free_range(2)), "--port-range", "1-1"],
+                         capture_output=True, text=True, timeout=10)
+    assert bad.returncode != 0 and "cannot resolve public address" in bad.stdout + bad.stderr, bad
+    print("ok unresolvable public hostname rejected")
+
+
 def main():
     binary = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
         os.path.dirname(__file__), "..", "build", "ac-relay")
     test_main(binary)
     test_pool_and_lease(binary)
     test_rate_limit(binary)
+    test_public_hostname(binary)
     print("ALL PASSED")
 
 

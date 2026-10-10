@@ -60,7 +60,7 @@ python3 tests/e2e_test.py build/ac-relay
 
 | flag | default | meaning |
 |------|---------|---------|
-| `--public-ip <ipv4>` | required | public address returned to owners in `ALLOCATED.relay_ip` |
+| `--public-ip <ipv4\|host>` | required | public address returned to owners in `ALLOCATED.relay_ip`. A hostname (e.g. `relay.example.org`) is resolved to its first IPv4 once at startup; restart after the address changes (dynamic DNS) |
 | `--bind <ipv4>` | `0.0.0.0` | local address for the control and allocation sockets |
 | `--control-port <port>` | `21100` | control port |
 | `--port-range <lo-hi>` | `40200-40999` | allocation port pool |

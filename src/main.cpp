@@ -15,8 +15,9 @@ void on_signal(int) { g_stop = 1; }
 
 void usage(const char* argv0) {
     std::fprintf(stderr,
-        "usage: %s --public-ip <ipv4> [options]\n"
-        "  --public-ip <ipv4>        public address sent to owners (required)\n"
+        "usage: %s --public-ip <ipv4|host> [options]\n"
+        "  --public-ip <ipv4|host>   public address sent to owners (required);\n"
+        "                            a hostname is resolved (IPv4) once at startup\n"
         "  --bind <ipv4>             local address to bind (default 0.0.0.0)\n"
         "  --control-port <port>     control port (default 21100)\n"
         "  --port-range <lo-hi>      allocation port pool (default 40200-40999)\n"
@@ -76,7 +77,8 @@ bool apply(acr::Config& c, const std::string& key, const std::string& val) {
         ok = acr::parse_ipv4(val, ip);
         c.bind = val;
     } else if (key == "public-ip") {
-        ok = acr::parse_ipv4(val, c.public_ip) && c.public_ip != 0;
+        c.public_host = val;  // IPv4 or hostname, resolved at startup
+        ok = !val.empty();
     } else if (key == "control-port") {
         ok = parse_uint(val, 65535, n) && n > 0;
         c.control_port = uint16_t(n);
@@ -148,7 +150,7 @@ int main(int argc, char** argv) {
             return 2;
         }
     }
-    if (cfg.public_ip == 0) {
+    if (cfg.public_host.empty()) {
         std::fprintf(stderr, "--public-ip is required\n");
         usage(argv[0]);
         return 2;
